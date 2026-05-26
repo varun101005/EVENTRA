@@ -4,191 +4,339 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Lexer for EVENTRA programming language
- * Converts source code into tokens for parsing
- * 
- * Supported tokens:
- * - START, ON, INPUT, SAY keywords
- * - IDENTIFIER (variable names, event names)
- * - STRING (quoted text)
- * - LBRACE, RBRACE ({ })
- * - NEWLINE
+ * Improved Lexer for EVENTRA Programming Language
+ * -----------------------------------------------
+ * Features:
+ * - Event-driven syntax support
+ * - Variables
+ * - Trigger system
+ * - Better error handling
+ * - Integer support
+ * - Operators and semicolons
+ * - Comments
  */
+
 public class Lexer {
-    
-    private String code;
+
+    private final String code;
     private int position;
     private char currentChar;
-    
-    // Token types
+    private int line;
+
+    // =========================
+    // TOKEN TYPES
+    // =========================
     public enum TokenType {
-        START,      // "start" keyword
-        ON,         // "on" keyword
-        INPUT,      // "input" keyword
-        SAY,        // "say" keyword
-        IDENTIFIER, // variable/event names
-        STRING,     // quoted strings
+
+        // Keywords
+        EVENT,
+        TRIGGER,
+        VAR,
+        SAY,
+        INPUT,
+
+        // Data Types
+        IDENTIFIER,
+        STRING,
+        NUMBER,
+
+        // Operators
+        ASSIGN,     // =
+        PLUS,       // +
+        MINUS,      // -
+        MULTIPLY,   // *
+        DIVIDE,     // /
+
+        // Symbols
         LBRACE,     // {
         RBRACE,     // }
-        NEWLINE,    // line break
-        EOF         // end of file
+        LPAREN,     // (
+        RPAREN,     // )
+        SEMICOLON,  // ;
+
+        // Utility
+        NEWLINE,
+        EOF
     }
-    
-    /**
-     * Token class representing a lexical unit
-     */
+
+    // =========================
+    // TOKEN CLASS
+    // =========================
     public static class Token {
+
         public TokenType type;
         public String value;
         public int line;
-        
+
         public Token(TokenType type, String value, int line) {
             this.type = type;
             this.value = value;
             this.line = line;
         }
-        
+
         @Override
         public String toString() {
-            return "Token{" + type + ", '" + value + "', line " + line + "}";
+            return "Token{" +
+                    "type=" + type +
+                    ", value='" + value + '\'' +
+                    ", line=" + line +
+                    '}';
         }
     }
-    
-    /**
-     * Constructor - initializes the lexer with source code
-     */
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
     public Lexer(String code) {
         this.code = code;
         this.position = 0;
-        this.currentChar = code.length() > 0 ? code.charAt(0) : '\0';
+        this.line = 1;
+
+        this.currentChar =
+                code.length() > 0
+                        ? code.charAt(0)
+                        : '\0';
     }
-    
-    /**
-     * Main method to tokenize the entire code
-     * Returns a list of tokens
-     */
+
+    // =========================
+    // MAIN TOKENIZER
+    // =========================
     public List<Token> tokenize() {
+
         List<Token> tokens = new ArrayList<>();
-        int line = 1;
-        
+
         while (currentChar != '\0') {
-            // Skip whitespace (but not newlines)
-            if (Character.isWhitespace(currentChar) && currentChar != '\n' && currentChar != '\r') {
+
+            // Skip spaces/tabs
+            if (Character.isWhitespace(currentChar)
+                    && currentChar != '\n'
+                    && currentChar != '\r') {
+
                 advance();
                 continue;
             }
-            
-            // Handle newlines
+
+            // Handle newline
             if (currentChar == '\n') {
-                tokens.add(new Token(TokenType.NEWLINE, "\n", line));
+                tokens.add(new Token(TokenType.NEWLINE, "\\n", line));
                 advance();
                 line++;
                 continue;
             }
-            
-            // Skip carriage return
+
+            // Ignore carriage return
             if (currentChar == '\r') {
                 advance();
                 continue;
             }
-            
-            // Handle comments (lines starting with #)
+
+            // Comments
             if (currentChar == '#') {
-                while (currentChar != '\0' && currentChar != '\n') {
+                skipComment();
+                continue;
+            }
+
+            // Symbols
+            switch (currentChar) {
+
+                case '{':
+                    tokens.add(new Token(TokenType.LBRACE, "{", line));
                     advance();
-                }
+                    continue;
+
+                case '}':
+                    tokens.add(new Token(TokenType.RBRACE, "}", line));
+                    advance();
+                    continue;
+
+                case '(':
+                    tokens.add(new Token(TokenType.LPAREN, "(", line));
+                    advance();
+                    continue;
+
+                case ')':
+                    tokens.add(new Token(TokenType.RPAREN, ")", line));
+                    advance();
+                    continue;
+
+                case ';':
+                    tokens.add(new Token(TokenType.SEMICOLON, ";", line));
+                    advance();
+                    continue;
+
+                case '=':
+                    tokens.add(new Token(TokenType.ASSIGN, "=", line));
+                    advance();
+                    continue;
+
+                case '+':
+                    tokens.add(new Token(TokenType.PLUS, "+", line));
+                    advance();
+                    continue;
+
+                case '-':
+                    tokens.add(new Token(TokenType.MINUS, "-", line));
+                    advance();
+                    continue;
+
+                case '*':
+                    tokens.add(new Token(TokenType.MULTIPLY, "*", line));
+                    advance();
+                    continue;
+
+                case '/':
+                    tokens.add(new Token(TokenType.DIVIDE, "/", line));
+                    advance();
+                    continue;
+
+                case '"':
+                    tokens.add(readString());
+                    continue;
+            }
+
+            // Numbers
+            if (Character.isDigit(currentChar)) {
+                tokens.add(readNumber());
                 continue;
             }
-            
-            // Handle braces
-            if (currentChar == '{') {
-                tokens.add(new Token(TokenType.LBRACE, "{", line));
-                advance();
+
+            // Identifiers / Keywords
+            if (Character.isLetter(currentChar)
+                    || currentChar == '_') {
+
+                tokens.add(readIdentifier());
                 continue;
             }
-            
-            if (currentChar == '}') {
-                tokens.add(new Token(TokenType.RBRACE, "}", line));
-                advance();
-                continue;
-            }
-            
-            // Handle strings (double quotes)
-            if (currentChar == '"') {
-                tokens.add(readString(line));
-                continue;
-            }
-            
-            // Handle identifiers and keywords
-            if (Character.isLetter(currentChar) || currentChar == '_') {
-                tokens.add(readIdentifier(line));
-                continue;
-            }
-            
-            // Unknown character
-            throw new RuntimeException("Unexpected character: '" + currentChar + "' at line " + line);
+
+            // Unknown Character
+            throw new RuntimeException(
+                    "Lexical Error at line "
+                            + line
+                            + ": Unexpected character '"
+                            + currentChar
+                            + "'"
+            );
         }
-        
-        // Add EOF token
+
         tokens.add(new Token(TokenType.EOF, "", line));
         return tokens;
     }
-    
-    /**
-     * Advance to the next character
-     */
+
+    // =========================
+    // ADVANCE POINTER
+    // =========================
     private void advance() {
+
         position++;
+
         if (position < code.length()) {
             currentChar = code.charAt(position);
         } else {
             currentChar = '\0';
         }
     }
-    
-    /**
-     * Read a string literal (between quotes)
-     */
-    private Token readString(int line) {
-        StringBuilder result = new StringBuilder();
-        advance(); // Skip opening quote
-        
-        while (currentChar != '"' && currentChar != '\0') {
-            result.append(currentChar);
+
+    // =========================
+    // SKIP COMMENTS
+    // =========================
+    private void skipComment() {
+
+        while (currentChar != '\0'
+                && currentChar != '\n') {
+
             advance();
         }
-        
-        if (currentChar == '"') {
-            advance(); // Skip closing quote
-        }
-        
-        return new Token(TokenType.STRING, result.toString(), line);
     }
-    
-    /**
-     * Read an identifier or keyword
-     */
-    private Token readIdentifier(int line) {
+
+    // =========================
+    // READ STRING
+    // =========================
+    private Token readString() {
+
         StringBuilder result = new StringBuilder();
-        
-        while (currentChar != '\0' && 
-               (Character.isLetterOrDigit(currentChar) || currentChar == '_')) {
+
+        advance(); // Skip opening quote
+
+        while (currentChar != '"'
+                && currentChar != '\0') {
+
             result.append(currentChar);
             advance();
         }
-        
+
+        // Unterminated string error
+        if (currentChar == '\0') {
+
+            throw new RuntimeException(
+                    "Unterminated string at line "
+                            + line
+            );
+        }
+
+        advance(); // Skip closing quote
+
+        return new Token(
+                TokenType.STRING,
+                result.toString(),
+                line
+        );
+    }
+
+    // =========================
+    // READ NUMBER
+    // =========================
+    private Token readNumber() {
+
+        StringBuilder result = new StringBuilder();
+
+        while (Character.isDigit(currentChar)) {
+
+            result.append(currentChar);
+            advance();
+        }
+
+        return new Token(
+                TokenType.NUMBER,
+                result.toString(),
+                line
+        );
+    }
+
+    // =========================
+    // READ IDENTIFIER / KEYWORD
+    // =========================
+    private Token readIdentifier() {
+
+        StringBuilder result = new StringBuilder();
+
+        while (currentChar != '\0'
+                &&
+                (Character.isLetterOrDigit(currentChar)
+                        || currentChar == '_')) {
+
+            result.append(currentChar);
+            advance();
+        }
+
         String value = result.toString();
-        
-        // Check if it's a keyword
+
         switch (value) {
-            case "start":
-                return new Token(TokenType.START, value, line);
-            case "on":
-                return new Token(TokenType.ON, value, line);
-            case "input":
-                return new Token(TokenType.INPUT, value, line);
+
+            case "event":
+                return new Token(TokenType.EVENT, value, line);
+
+            case "trigger":
+                return new Token(TokenType.TRIGGER, value, line);
+
+            case "var":
+                return new Token(TokenType.VAR, value, line);
+
             case "say":
                 return new Token(TokenType.SAY, value, line);
+
+            case "input":
+                return new Token(TokenType.INPUT, value, line);
+
             default:
                 return new Token(TokenType.IDENTIFIER, value, line);
         }

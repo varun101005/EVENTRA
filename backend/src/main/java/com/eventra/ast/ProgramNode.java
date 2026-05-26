@@ -4,44 +4,52 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents the root of the AST (Abstract Syntax Tree)
- * Contains all event blocks in the program
+ * ProgramNode
+ * -----------------------------------
+ * Root node of EVENTRA AST.
+ * Contains all event blocks.
  */
+
 public class ProgramNode implements ASTNode {
-    private List<EventBlockNode> eventBlocks;
-    
+
+    private final List<EventBlockNode> eventBlocks;
+
     public ProgramNode() {
-        this.eventBlocks = new ArrayList<>();
+
+        this.eventBlocks =
+                new ArrayList<>();
     }
-    
-    /**
-     * Add an event block to the program
-     */
-    public void addEventBlock(EventBlockNode eventBlock) {
-        eventBlocks.add(eventBlock);
+
+    // =========================
+    // ADD EVENT BLOCK
+    // =========================
+
+    public void addEventBlock(
+            EventBlockNode block
+    ) {
+
+        eventBlocks.add(block);
     }
-    
-    /**
-     * Get all event blocks
-     */
-    public List<EventBlockNode> getEventBlocks() {
+
+    // =========================
+    // GET ALL EVENTS
+    // =========================
+
+    public List<EventBlockNode>
+    getEventBlocks() {
+
         return eventBlocks;
     }
-    
-    /**
-     * Find an event block by event name
-     */
-    public EventBlockNode findEventBlock(String eventName) {
-        for (EventBlockNode block : eventBlocks) {
-            if (block.getEventName().equals(eventName)) {
-                return block;
-            }
-        }
-        return null;
-    }
-    
+
+    // =========================
+    // VISITOR ACCEPT
+    // =========================
+
     @Override
-    public void accept(ASTVisitor visitor) {
+    public void accept(
+            ASTVisitor visitor
+    ) {
+
         visitor.visit(this);
     }
 }

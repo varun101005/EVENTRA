@@ -1,24 +1,56 @@
 package com.eventra.model;
 
+import jakarta.validation.constraints.NotBlank;
+
 /**
- * Request model for triggering events
- * Contains event name and the code context
+ * TriggerRequest
+ * -----------------------------------
+ * Request model used for triggering
+ * runtime events in EVENTRA.
  */
+
 public class TriggerRequest {
+
+    @NotBlank(message = "Event name is required")
     private String eventName;
+
+    @NotBlank(message = "Code cannot be empty")
     private String code;
 
-    // Default constructor
+    // Optional event priority
+    private int priority = 1;
+
+    // =========================
+    // CONSTRUCTORS
+    // =========================
+
     public TriggerRequest() {
     }
 
-    // Constructor with parameters
-    public TriggerRequest(String eventName, String code) {
+    public TriggerRequest(
+            String eventName,
+            String code
+    ) {
+
         this.eventName = eventName;
         this.code = code;
     }
 
-    // Getters and Setters
+    public TriggerRequest(
+            String eventName,
+            String code,
+            int priority
+    ) {
+
+        this.eventName = eventName;
+        this.code = code;
+        this.priority = priority;
+    }
+
+    // =========================
+    // GETTERS & SETTERS
+    // =========================
+
     public String getEventName() {
         return eventName;
     }
@@ -33,5 +65,22 @@ public class TriggerRequest {
 
     public void setCode(String code) {
         this.code = code;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+
+    @Override
+    public String toString() {
+
+        return "TriggerRequest{" +
+                "eventName='" + eventName + '\'' +
+                ", priority=" + priority +
+                '}';
     }
 }

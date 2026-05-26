@@ -5,88 +5,227 @@ import com.eventra.interpreter.Interpreter;
 import com.eventra.lexer.Lexer;
 import com.eventra.lexer.Lexer.Token;
 import com.eventra.parser.Parser;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
 
 /**
- * Service class that orchestrates the entire interpretation process
- * Coordinates between Lexer, Parser, and Interpreter
+ * InterpreterService
+ * ----------------------------------------
+ * Core runtime orchestration service
+ * for EVENTRA Programming Language.
+ *
+ * Responsibilities:
+ * - Lexical Analysis
+ * - Syntax Parsing
+ * - AST Generation
+ * - Runtime Interpretation
+ * - Event Triggering
  */
+
 @Service
 public class InterpreterService {
-    
-    /**
-     * Execute EVENTRA code and return the output
-     * 
-     * Process:
-     * 1. Lexing - Convert source code to tokens
-     * 2. Parsing - Convert tokens to AST
-     * 3. Interpreting - Execute AST and produce output
-     */
+
+    // =========================
+    // EXECUTE CODE
+    // =========================
+
     public String executeCode(String code) {
+
+        long startTime =
+                System.currentTimeMillis();
+
+        StringBuilder runtimeLog =
+                new StringBuilder();
+
         try {
-            // Step 1: Lexing
-            Lexer lexer = new Lexer(code);
-            List<Token> tokens = lexer.tokenize();
-            
-            // Step 2: Parsing
-            Parser parser = new Parser(tokens);
-            ProgramNode program = parser.parse();
-            
-            // Step 3: Interpreting
-            Interpreter interpreter = new Interpreter();
-            String output = interpreter.interpret(program);
-            
-            return output;
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing code: " + e.getMessage(), e);
+
+            runtimeLog.append(
+                    "====================================\n"
+            );
+
+            runtimeLog.append(
+                    " EVENTRA Execution Started\n"
+            );
+
+            runtimeLog.append(
+                    "====================================\n\n"
+            );
+
+            // ====================================
+            // STEP 1: LEXICAL ANALYSIS
+            // ====================================
+
+            runtimeLog.append(
+                    "[Phase 1] Lexical Analysis Started\n"
+            );
+
+            Lexer lexer =
+                    new Lexer(code);
+
+            List<Token> tokens =
+                    lexer.tokenize();
+
+            runtimeLog.append(
+                    "[SUCCESS] Tokens Generated: "
+            ).append(tokens.size())
+                    .append("\n\n");
+
+            // ====================================
+            // STEP 2: SYNTAX ANALYSIS
+            // ====================================
+
+            runtimeLog.append(
+                    "[Phase 2] Syntax Parsing Started\n"
+            );
+
+            Parser parser =
+                    new Parser(tokens);
+
+            ProgramNode program =
+                    parser.parse();
+
+            runtimeLog.append(
+                    "[SUCCESS] AST Generated\n\n"
+            );
+
+            // ====================================
+            // STEP 3: INTERPRETATION
+            // ====================================
+
+            runtimeLog.append(
+                    "[Phase 3] Runtime Interpretation Started\n"
+            );
+
+            Interpreter interpreter =
+                    new Interpreter();
+
+            String result =
+                    interpreter.interpret(program);
+
+            runtimeLog.append(
+                    "[SUCCESS] Program Executed\n\n"
+            );
+
+            long endTime =
+                    System.currentTimeMillis();
+
+            runtimeLog.append(
+                    "Execution Time: "
+            ).append(endTime - startTime)
+                    .append(" ms\n");
+
+            runtimeLog.append(
+                    "====================================\n"
+            );
+
+            return runtimeLog + "\n" + result;
+
+        }
+
+        catch (Exception e) {
+
+            runtimeLog.append(
+                    "\n[EXECUTION ERROR]\n"
+            );
+
+            runtimeLog.append(
+                    e.getMessage()
+            ).append("\n");
+
+            runtimeLog.append(
+                    "\n===================================="
+            );
+
+            throw new RuntimeException(
+                    runtimeLog.toString(),
+                    e
+            );
         }
     }
-    
-    /**
-     * Execute code and trigger a specific event
-     */
-    public String triggerEvent(String code, String eventName) {
+
+    // =========================
+    // TRIGGER EVENT
+    // =========================
+
+    public String triggerEvent(
+            String code,
+            String eventName
+    ) {
+
         try {
-            // Lexing and parsing
-            Lexer lexer = new Lexer(code);
-            List<Token> tokens = lexer.tokenize();
-            
-            Parser parser = new Parser(tokens);
-            ProgramNode program = parser.parse();
-            
-            // Create interpreter and build event map
-            Interpreter interpreter = new Interpreter();
+
+            Lexer lexer =
+                    new Lexer(code);
+
+            List<Token> tokens =
+                    lexer.tokenize();
+
+            Parser parser =
+                    new Parser(tokens);
+
+            ProgramNode program =
+                    parser.parse();
+
+            Interpreter interpreter =
+                    new Interpreter();
+
             interpreter.interpret(program);
-            
-            // Trigger the specified event
-            return interpreter.triggerEvent(eventName);
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Error triggering event: " + e.getMessage(), e);
+
+            return interpreter
+                    .triggerEvent(eventName);
+
+        }
+
+        catch (Exception e) {
+
+            throw new RuntimeException(
+
+                    "[Runtime Trigger Error] "
+                            + e.getMessage(),
+
+                    e
+            );
         }
     }
-    
-    /**
-     * Get all defined events from code
-     */
-    public java.util.Set<String> getDefinedEvents(String code) {
+
+    // =========================
+    // GET DEFINED EVENTS
+    // =========================
+
+    public Set<String> getDefinedEvents(
+            String code
+    ) {
+
         try {
-            Lexer lexer = new Lexer(code);
-            List<Token> tokens = lexer.tokenize();
-            
-            Parser parser = new Parser(tokens);
-            ProgramNode program = parser.parse();
-            
-            Interpreter interpreter = new Interpreter();
+
+            Lexer lexer =
+                    new Lexer(code);
+
+            List<Token> tokens =
+                    lexer.tokenize();
+
+            Parser parser =
+                    new Parser(tokens);
+
+            ProgramNode program =
+                    parser.parse();
+
+            Interpreter interpreter =
+                    new Interpreter();
+
             interpreter.interpret(program);
-            
-            return interpreter.getDefinedEvents();
-            
-        } catch (Exception e) {
-            return java.util.Collections.emptySet();
+
+            return interpreter
+                    .getDefinedEvents();
+        }
+
+        catch (Exception e) {
+
+            return java.util.Collections
+                    .emptySet();
         }
     }
 }

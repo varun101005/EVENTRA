@@ -1,32 +1,61 @@
 package com.eventra.model;
 
+import java.time.LocalDateTime;
+
 /**
- * Response model for code execution
- * Contains output, success status, and optional error message
+ * ExecuteResponse
+ * -----------------------------------
+ * Response model returned after EVENTRA
+ * runtime execution.
  */
+
 public class ExecuteResponse {
+
     private String output;
+
     private boolean success;
+
     private String error;
 
-    // Default constructor
+    private LocalDateTime timestamp;
+
+    private long executionTimeMs;
+
+    // =========================
+    // CONSTRUCTORS
+    // =========================
+
     public ExecuteResponse() {
+
+        this.timestamp = LocalDateTime.now();
     }
 
-    // Constructor with parameters
-    public ExecuteResponse(String output, boolean success) {
+    public ExecuteResponse(
+            String output,
+            boolean success
+    ) {
+
         this.output = output;
         this.success = success;
+        this.timestamp = LocalDateTime.now();
     }
 
-    // Constructor with error
-    public ExecuteResponse(String output, boolean success, String error) {
+    public ExecuteResponse(
+            String output,
+            boolean success,
+            String error
+    ) {
+
         this.output = output;
         this.success = success;
         this.error = error;
+        this.timestamp = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    // =========================
+    // GETTERS & SETTERS
+    // =========================
+
     public String getOutput() {
         return output;
     }
@@ -49,5 +78,31 @@ public class ExecuteResponse {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public LocalDateTime getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(LocalDateTime timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public long getExecutionTimeMs() {
+        return executionTimeMs;
+    }
+
+    public void setExecutionTimeMs(long executionTimeMs) {
+        this.executionTimeMs = executionTimeMs;
+    }
+
+    @Override
+    public String toString() {
+
+        return "ExecuteResponse{" +
+                "success=" + success +
+                ", executionTimeMs=" + executionTimeMs +
+                ", timestamp=" + timestamp +
+                '}';
     }
 }

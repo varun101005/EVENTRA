@@ -1,3 +1,4 @@
+com\eventra\parser\Parser$1.class
 com\eventra\ast\InputStatementNode.class
 com\eventra\model\ExecuteRequest.class
 com\eventra\lexer\Lexer$Token.class
@@ -12,7 +13,6 @@ com\eventra\service\InterpreterService.class
 com\eventra\ast\SayStatementNode.class
 com\eventra\ast\EventBlockNode.class
 com\eventra\controller\RunController.class
-com\eventra\interpreter\Interpreter.class
 com\eventra\model\TriggerRequest.class
 com\eventra\config\CorsConfig.class
 com\eventra\lexer\Lexer.class

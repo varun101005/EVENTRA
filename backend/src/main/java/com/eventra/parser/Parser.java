@@ -1,203 +1,454 @@
 package com.eventra.parser;
 
 import com.eventra.ast.*;
-import com.eventra.lexer.Lexer;
 import com.eventra.lexer.Lexer.Token;
 import com.eventra.lexer.Lexer.TokenType;
 
 import java.util.List;
 
 /**
- * Parser for EVENTRA programming language
- * Converts tokens into an Abstract Syntax Tree (AST)
+ * ==================================================
+ * FINAL EVENTRA PARSER
+ * --------------------------------------------------
+ * Recursive Descent Parser
+ * Generates AST from EVENTRA source code
+ * ==================================================
  */
+
 public class Parser {
-    private List<Token> tokens;
+
+    // ==========================================
+    // PARSER STATE
+    // ==========================================
+
+    private final List<Token> tokens;
+
     private int position;
+
     private Token currentToken;
-    
-    /**
-     * Constructor - initializes parser with tokens
-     */
+
+    // ==========================================
+    // CONSTRUCTOR
+    // ==========================================
+
     public Parser(List<Token> tokens) {
+
         this.tokens = tokens;
+
         this.position = 0;
+
         this.currentToken = tokens.get(0);
     }
-    
-    /**
-     * Main parsing method - returns the complete AST
-     */
+
+    // ==========================================
+    // MAIN PARSE METHOD
+    // ==========================================
+
     public ProgramNode parse() {
-        ProgramNode program = new ProgramNode();
-        
-        while (currentToken.type != TokenType.EOF) {
-            // Skip newlines at the beginning
-            if (currentToken.type == TokenType.NEWLINE) {
-                advance();
-                continue;
+
+        ProgramNode program =
+                new ProgramNode();
+
+        while (
+                currentToken.type
+                !=
+                TokenType.EOF
+        ) {
+
+            skipNewLines();
+
+            // Parse event block
+            if (
+                    currentToken.type
+                    ==
+                    TokenType.EVENT
+            ) {
+
+                EventBlockNode block =
+                        parseEventBlock();
+
+                program.addEventBlock(block);
             }
-            
-            // Parse event blocks
-            if (currentToken.type == TokenType.START || currentToken.type == TokenType.ON) {
-                EventBlockNode eventBlock = parseEventBlock();
-                program.addEventBlock(eventBlock);
-            } else {
-                throw new RuntimeException("Unexpected token: " + currentToken.value + " at line " + currentToken.line);
+
+            else {
+
+                syntaxError(
+                        "Expected 'event' declaration"
+                );
             }
         }
-        
+
         return program;
     }
-    
-    /**
-     * Parse an event block (start { ... } or on eventName { ... })
-     */
+
+    // ==========================================
+    // PARSE EVENT BLOCK
+    // ==========================================
+
     private EventBlockNode parseEventBlock() {
-        String eventName;
-        
-        // Check if it's a 'start' block or 'on eventName' block
-        if (currentToken.type == TokenType.START) {
-            eventName = "start";
-            advance();
-        } else if (currentToken.type == TokenType.ON) {
-            advance(); // consume 'on'
-            
-            // Skip newlines
-            while (currentToken.type == TokenType.NEWLINE) {
-                advance();
-            }
-            
-            // Expect event name
-            if (currentToken.type != TokenType.IDENTIFIER) {
-                throw new RuntimeException("Expected event name after 'on' at line " + currentToken.line);
-            }
-            eventName = currentToken.value;
-            advance();
-        } else {
-            throw new RuntimeException("Expected 'start' or 'on' at line " + currentToken.line);
+
+        // CONSUME EVENT KEYWORD
+        expect(TokenType.EVENT);
+
+        skipNewLines();
+
+        // EXPECT EVENT NAME
+        if (
+                currentToken.type
+                !=
+                TokenType.IDENTIFIER
+        ) {
+
+            syntaxError(
+                    "Expected event name"
+            );
         }
-        
-        // Skip newlines
-        while (currentToken.type == TokenType.NEWLINE) {
-            advance();
-        }
-        
-        // Expect opening brace
-        if (currentToken.type != TokenType.LBRACE) {
-            throw new RuntimeException("Expected '{' after event name at line " + currentToken.line);
-        }
-        advance(); // consume '{'
-        
-        EventBlockNode eventBlock = new EventBlockNode(eventName);
-        
-        // Parse statements inside the block
-        while (currentToken.type != TokenType.RBRACE && currentToken.type != TokenType.EOF) {
-            // Skip newlines
-            if (currentToken.type == TokenType.NEWLINE) {
-                advance();
-                continue;
-            }
-            
-            // Parse statement
-            ASTNode statement = parseStatement();
-            if (statement != null) {
-                eventBlock.addStatement(statement);
-            }
-            
-            // Skip newlines after statement
-            while (currentToken.type == TokenType.NEWLINE) {
-                advance();
-            }
-        }
-        
-        // Expect closing brace
-        if (currentToken.type != TokenType.RBRACE) {
-            throw new RuntimeException("Expected '}' to close event block at line " + currentToken.line);
-        }
-        advance(); // consume '}'
-        
-        return eventBlock;
-    }
-    
-    /**
-     * Parse a single statement
-     */
-    private ASTNode parseStatement() {
-        // Skip newlines
-        while (currentToken.type == TokenType.NEWLINE) {
-            advance();
-        }
-        
-        if (currentToken.type == TokenType.SAY) {
-            return parseSayStatement();
-        } else if (currentToken.type == TokenType.INPUT) {
-            return parseInputStatement();
-        } else if (currentToken.type == TokenType.RBRACE) {
-            return null; // End of block
-        } else if (currentToken.type == TokenType.EOF) {
-            return null; // End of file
-        } else {
-            throw new RuntimeException("Unknown statement at line " + currentToken.line);
-        }
-    }
-    
-    /**
-     * Parse a 'say' statement
-     */
-    private ASTNode parseSayStatement() {
-        advance(); // consume 'say'
-        
-        // Skip newlines
-        while (currentToken.type == TokenType.NEWLINE) {
-            advance();
-        }
-        
-        // Check if it's a string or variable
-        if (currentToken.type == TokenType.STRING) {
-            String value = currentToken.value;
-            advance();
-            return new SayStatementNode(value, false);
-        } else if (currentToken.type == TokenType.IDENTIFIER) {
-            String varName = currentToken.value;
-            advance();
-            return new SayStatementNode(varName, true);
-        } else {
-            throw new RuntimeException("Expected string or variable after 'say' at line " + currentToken.line);
-        }
-    }
-    
-    /**
-     * Parse an 'input' statement
-     */
-    private ASTNode parseInputStatement() {
-        advance(); // consume 'input'
-        
-        // Skip newlines
-        while (currentToken.type == TokenType.NEWLINE) {
-            advance();
-        }
-        
-        // Expect variable name
-        if (currentToken.type != TokenType.IDENTIFIER) {
-            throw new RuntimeException("Expected variable name after 'input' at line " + currentToken.line);
-        }
-        
-        String varName = currentToken.value;
+
+        // GET EVENT NAME
+        String eventName =
+                currentToken.value;
+
+        // CONSUME IDENTIFIER
         advance();
-        
-        return new InputStatementNode(varName);
-    }
-    
-    /**
-     * Advance to the next token
-     */
-    private void advance() {
-        position++;
-        if (position < tokens.size()) {
-            currentToken = tokens.get(position);
-        } else {
-            currentToken = new Token(TokenType.EOF, "", 0);
+
+        skipNewLines();
+
+        // EXPECT {
+        expect(TokenType.LBRACE);
+
+        // CREATE EVENT BLOCK
+        EventBlockNode block =
+                new EventBlockNode(
+                        eventName
+                );
+
+        skipNewLines();
+
+        // PARSE STATEMENTS
+        while (
+                currentToken.type
+                !=
+                TokenType.RBRACE
+                &&
+                currentToken.type
+                !=
+                TokenType.EOF
+        ) {
+
+            ASTNode statement =
+                    parseStatement();
+
+            if (statement != null) {
+
+                block.addStatement(
+                        statement
+                );
+            }
+
+            skipNewLines();
         }
+
+        // EXPECT }
+        expect(TokenType.RBRACE);
+
+        return block;
+    }
+
+    // ==========================================
+    // PARSE STATEMENT
+    // ==========================================
+
+    private ASTNode parseStatement() {
+
+        skipNewLines();
+
+        switch (currentToken.type) {
+
+            case SAY:
+                return parseSayStatement();
+
+            case INPUT:
+                return parseInputStatement();
+
+            case TRIGGER:
+                return parseTriggerStatement();
+
+            case RBRACE:
+                return null;
+
+            case EOF:
+                return null;
+
+            default:
+
+                syntaxError(
+                        "Unknown statement"
+                );
+
+                return null;
+        }
+    }
+
+    // ==========================================
+    // PARSE SAY
+    // ==========================================
+
+    private ASTNode parseSayStatement() {
+
+        // consume say
+        expect(TokenType.SAY);
+
+        skipNewLines();
+
+        String value;
+
+        boolean isVariable;
+
+        // STRING
+        if (
+                currentToken.type
+                ==
+                TokenType.STRING
+        ) {
+
+            value =
+                    currentToken.value;
+
+            isVariable = false;
+
+            advance();
+        }
+
+        // VARIABLE
+        else if (
+                currentToken.type
+                ==
+                TokenType.IDENTIFIER
+        ) {
+
+            value =
+                    currentToken.value;
+
+            isVariable = true;
+
+            advance();
+        }
+
+        else {
+
+            syntaxError(
+                    "Expected string or identifier after 'say'"
+            );
+
+            return null;
+        }
+
+        skipNewLines();
+
+        // CONCAT SUPPORT
+        if (
+                currentToken.type
+                ==
+                TokenType.PLUS
+        ) {
+
+            advance();
+
+            skipNewLines();
+
+            String concatValue;
+
+            boolean concatIsVariable;
+
+            if (
+                    currentToken.type
+                    ==
+                    TokenType.STRING
+            ) {
+
+                concatValue =
+                        currentToken.value;
+
+                concatIsVariable = false;
+
+                advance();
+            }
+
+            else if (
+                    currentToken.type
+                    ==
+                    TokenType.IDENTIFIER
+            ) {
+
+                concatValue =
+                        currentToken.value;
+
+                concatIsVariable = true;
+
+                advance();
+            }
+
+            else {
+
+                syntaxError(
+                        "Expected value after '+'"
+                );
+
+                return null;
+            }
+
+            return new SayStatementNode(
+                    value,
+                    isVariable,
+                    concatValue,
+                    concatIsVariable
+            );
+        }
+
+        return new SayStatementNode(
+                value,
+                isVariable
+        );
+    }
+
+    // ==========================================
+    // PARSE INPUT
+    // ==========================================
+
+    private ASTNode parseInputStatement() {
+
+        // consume input
+        expect(TokenType.INPUT);
+
+        skipNewLines();
+
+        if (
+                currentToken.type
+                !=
+                TokenType.IDENTIFIER
+        ) {
+
+            syntaxError(
+                    "Expected variable name after input"
+            );
+        }
+
+        String variableName =
+                currentToken.value;
+
+        advance();
+
+        return new InputStatementNode(
+                variableName
+        );
+    }
+
+    // ==========================================
+    // PARSE TRIGGER
+    // ==========================================
+
+    private ASTNode parseTriggerStatement() {
+
+        // consume trigger
+        expect(TokenType.TRIGGER);
+
+        skipNewLines();
+
+        if (
+                currentToken.type
+                !=
+                TokenType.IDENTIFIER
+        ) {
+
+            syntaxError(
+                    "Expected event name after trigger"
+            );
+        }
+
+        String eventName =
+                currentToken.value;
+
+        advance();
+
+        return new TriggerStatementNode(
+                eventName
+        );
+    }
+
+    // ==========================================
+    // EXPECT TOKEN
+    // ==========================================
+
+    private void expect(TokenType expected) {
+
+        if (
+                currentToken.type
+                !=
+                expected
+        ) {
+
+            syntaxError(
+                    "Expected token: "
+                            + expected
+            );
+        }
+
+        advance();
+    }
+
+    // ==========================================
+    // SKIP NEWLINES
+    // ==========================================
+
+    private void skipNewLines() {
+
+        while (
+                currentToken.type
+                ==
+                TokenType.NEWLINE
+        ) {
+
+            advance();
+        }
+    }
+
+    // ==========================================
+    // ADVANCE TOKEN
+    // ==========================================
+
+    private void advance() {
+
+        position++;
+
+        if (position < tokens.size()) {
+
+            currentToken =
+                    tokens.get(position);
+
+        } else {
+
+            currentToken =
+                    tokens.get(tokens.size() - 1);
+        }
+    }
+
+    // ==========================================
+    // SYNTAX ERROR
+    // ==========================================
+
+    private void syntaxError(
+            String message
+    ) {
+
+        throw new RuntimeException(
+
+                "[Syntax Error] Line "
+                        + currentToken.line
+                        + ": "
+                        + message
+                        + " -> Found '"
+                        + currentToken.value
+                        + "'"
+        );
     }
 }
