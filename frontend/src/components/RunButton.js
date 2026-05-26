@@ -7,14 +7,6 @@ import axios from 'axios';
 /**
  * ==================================================
  * EVENTRA Runtime Control Panel
- * --------------------------------------------------
- * Features:
- * - Execute EVENTRA programs
- * - Runtime API integration
- * - Event extraction
- * - Import / Export
- * - Save / Load system
- * - Error handling
  * ==================================================
  */
 
@@ -95,7 +87,40 @@ const RunButton = ({
 
     try {
 
-      // Runtime Logs
+      // ====================================
+      // RUNTIME INPUT SUPPORT
+      // ====================================
+
+      let runtimeCode = code;
+
+      const inputRegex =
+          /input\s+(\w+)/g;
+
+      let match;
+
+      while (
+          (match = inputRegex.exec(code))
+          !== null
+      ) {
+
+        const variableName =
+            match[1];
+
+        const userValue = prompt(
+            `Enter value for ${variableName}:`
+        );
+
+        runtimeCode =
+            runtimeCode.replace(
+                `input ${variableName}`,
+                `say "${userValue || ''}"`
+            );
+      }
+
+      // ====================================
+      // RUNTIME LOGS
+      // ====================================
+
       onOutput(
 `====================================
  EVENTRA Runtime Engine Started
@@ -115,7 +140,7 @@ const RunButton = ({
               `${API_BASE_URL}/events`,
 
               {
-                code
+                code: runtimeCode
               }
           );
 
@@ -153,7 +178,7 @@ const RunButton = ({
               `${API_BASE_URL}/run`,
 
               {
-                code
+                code: runtimeCode
               }
           );
 
@@ -177,7 +202,7 @@ const RunButton = ({
         if (addToHistory) {
 
           addToHistory(
-              code,
+              runtimeCode,
               true
           );
         }
@@ -200,7 +225,7 @@ const RunButton = ({
         if (addToHistory) {
 
           addToHistory(
-              code,
+              runtimeCode,
               false
           );
         }
@@ -324,9 +349,7 @@ ${err.message}\n`
           }}
       >
 
-        {/* ================================= */}
         {/* RUN */}
-        {/* ================================= */}
 
         <button
 
@@ -476,9 +499,7 @@ ${err.message}\n`
 
         </button>
 
-        {/* ================================= */}
         {/* ERROR */}
-        {/* ================================= */}
 
         {error && (
 
