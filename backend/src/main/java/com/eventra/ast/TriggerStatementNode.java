@@ -41,3 +41,4 @@ public class TriggerStatementNode
         visitor.visit(this);
     }
 }
+
