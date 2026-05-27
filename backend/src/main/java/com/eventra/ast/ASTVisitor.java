@@ -25,3 +25,4 @@ public interface ASTVisitor {
     // trigger statement
     void visit(TriggerStatementNode node);
 }
+
